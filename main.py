@@ -58,6 +58,9 @@ class Runner(object):
         return m[name]
 
     def _init_model(self):
+        print("=" * 50)
+        print("GPU Index:", self.gpu)
+        print("=" * 50)
         self.model = MultiHeadSelection(self.hyper).cuda(self.gpu)
 
     def preprocessing(self):

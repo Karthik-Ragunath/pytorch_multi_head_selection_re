@@ -1,0 +1,5 @@
+pytorch-crf
+pytorch-transformers
+torch
+prefetch-generator
+tqdm

@@ -12,12 +12,17 @@ class Conll_bert_preprocessing(object):
         self.raw_data_root = hyper.raw_data_root
         self.data_root = hyper.data_root
 
+        print('*' * 50)
+        print('Data Root:', self.data_root)
+        print('*' * 50)
         if not os.path.exists(self.data_root):
             os.makedirs(self.data_root)
 
         self.relation_vocab_path = os.path.join(self.data_root,
                                                 hyper.relation_vocab)
-
+        print('=' * 50)
+        print("Relation Vocab Path:", self.relation_vocab_path)
+        print('=' * 50)
         self.bio_vocab = {}
         self.word_vocab = Counter()
         self.relation_vocab_set = set()
@@ -31,6 +36,9 @@ class Conll_bert_preprocessing(object):
     def _one_pass_train(self):
         # prepare for word_vocab, relation_vocab
         train_path = os.path.join(self.raw_data_root, self.hyper.train)
+        print("-" * 50)
+        print("Train Path:", train_path)
+        print("-" * 50)
         self.relation_vocab_set = set()
         sent = []
         dic = {}
@@ -38,6 +46,11 @@ class Conll_bert_preprocessing(object):
         with open(train_path, 'r') as f:
             for line in f:
                 if line.startswith('#'):
+                    '''
+                    print('*' * 25, "Train Data Parsing", '*'*25)
+                    print(sent)
+                    print('*' * 50)
+                    '''
                     if sent != []:
                         self.word_vocab.update(sent)
                     sent = []
@@ -53,9 +66,15 @@ class Conll_bert_preprocessing(object):
                     relation = eval(relation)
                     sent.append(word)
                     if relation != ['N']:
+                        # Sets are basically used to ensure no duplicate relation types for each token
                         self.relation_vocab_set.update(relation)
                         for r, h in zip(relation, head_list):
                             dic[word+'~'+r] = h
+            '''
+            print('*' * 25, "Train Data Parsing", '*'*25)
+            print(sent)
+            print('*' * 25, "Train Data parsing", '*'*25)
+            '''
             self.word_vocab.update(sent)
 
     def prepare_bert(self, result):
@@ -147,6 +166,10 @@ class Conll_bert_preprocessing(object):
         selection_dics = []  # temp
         source = os.path.join(self.raw_data_root, dataset)
         target = os.path.join(self.data_root, dataset)
+        print("^" * 25, "Paths", "^" * 25)
+        print("Source Path:", source)
+        print("Target Path:", target)
+        print("^" * 50)
         with open(source, 'r') as s, open(target, 'w') as t:
             for line in s:
                 if line.startswith('#'):
@@ -185,7 +208,12 @@ class Conll_bert_preprocessing(object):
                 triplets = self._process_sent(sent, selection_dics, bio)
                 result = {'text': sent, 'spo_list': triplets,
                           'bio': bio, 'selection': selection_dics}
+                print("^" * 25, "Data Preprocessing: _gen_one_data", "^" * 25)
+                print("Triplets:", triplets)
+                print("Result:", result)
                 result = self.prepare_bert(result)
+                print("Result Bert Prepared:", result)
+                print("^" * 50)
                 t.write(json.dumps(result))
 
     def gen_all_data(self):
@@ -194,21 +222,30 @@ class Conll_bert_preprocessing(object):
 
     def gen_bio_vocab(self):
         result = {'<pad>': 3, 'B': 0, 'I': 1, 'O': 2}
+        # writing result dict to bio_vocab.json
         json.dump(result,
                   open(os.path.join(self.data_root, 'bio_vocab.json'), 'w'))
 
     def gen_relation_vocab(self):
         relation_vocab = {}
         i = 0
+        print("=" * 25, "Possible Relations:", "=" * 25)
+        print(self.relation_vocab_set)
+        print("=" * 50)
         for r in self.relation_vocab_set:
             relation_vocab[r] = i
             i += 1
         relation_vocab['N'] = i
+        print("+" * 25, "Relation Index Dict:", "+" * 25)
+        print(relation_vocab)
+        print('-' * 20, "Relationship Vocab Path:", self.relation_vocab_path, '-' * 20)
+        print("+" * 50)
         self.relation_vocab_dict = relation_vocab
         json.dump(relation_vocab,
                   open(self.relation_vocab_path, 'w'),
                   ensure_ascii=True)
 
+    # min frequency specified is 1
     def gen_vocab(self, min_freq: int):
         target = os.path.join(self.data_root, 'word_vocab.json')
         result = {'<pad>': 0}
