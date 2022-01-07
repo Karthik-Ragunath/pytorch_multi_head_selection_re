@@ -13,6 +13,9 @@ from typing import Dict, List, Tuple, Set, Optional
 
 from pytorch_transformers import *
 
+import numpy as np
+
+import sys
 
 class Selection_Dataset(Dataset):
     def __init__(self, hyper, dataset):
@@ -112,18 +115,35 @@ class Batch_reader(object):
     def __init__(self, data):
         transposed_data = list(zip(*data))
         # tokens_id, bio_id, selection_id, spo, text, bio
-
-        self.tokens_id = pad_sequence(transposed_data[0], batch_first=True)
-        self.bio_id = pad_sequence(transposed_data[1], batch_first=True)
-        self.selection_id = torch.stack(transposed_data[2], 0)
-
-        self.length = transposed_data[3]
-
-        self.spo_gold = transposed_data[4]
-        self.text = transposed_data[5]
-        self.bio = transposed_data[6]
+        original_stdout = sys.stdout
+        if os.path.exists('batch_data_info.txt'):
+            open('batch_data_info.txt', 'w+').close()
+        
+        with open('batch_data_info.txt', 'w') as fp:
+            sys.stdout = fp
+            print("================= Batch Functionality ==================")
+            print("tokens_id before padding:", np.ndim(transposed_data[0]), np.shape(transposed_data[0]))
+            self.tokens_id = pad_sequence(transposed_data[0], batch_first=True)
+            print("tokens_id after padding:", np.ndim(self.tokens_id), np.shape(self.tokens_id))
+            print("bio_id before padding:", np.ndim(transposed_data[1]), np.shape(transposed_data[1]))
+            self.bio_id = pad_sequence(transposed_data[1], batch_first=True)
+            print("bio_id after padding:", np.ndim(self.bio_id), np.shape(self.bio_id))
+            print("selection_id before padding:", np.ndim(transposed_data[2]), np.shape(transposed_data[2]))
+            self.selection_id = torch.stack(transposed_data[2], 0)
+            print("selection_id after padding:", np.ndim(self.selection_id), np.shape(self.selection_id))
+            self.length = transposed_data[3]
+            print("Length:", transposed_data[3])
+            self.spo_gold = transposed_data[4]
+            print("SPO_GOLD (tranposed_data[4]):", np.ndim(transposed_data[4]), np.shape(transposed_data[4]))
+            self.text = transposed_data[5]
+            print("text (tranposed_data[5]):", np.ndim(transposed_data[5]), np.shape(transposed_data[5]))
+            self.bio = transposed_data[6]
+            print("bio (tranposed_data[6]):", np.ndim(transposed_data[6]), np.shape(transposed_data[6]))
+            print("=========================================================")
+            sys.stdout = original_stdout
 
     def pin_memory(self):
+        # custom data must be pinned in this way in order to instruct the compiler to be page locked
         self.tokens_id = self.tokens_id.pin_memory()
         self.bio_id = self.bio_id.pin_memory()
         self.selection_id = self.selection_id.pin_memory()
@@ -134,4 +154,4 @@ def collate_fn(batch):
     return Batch_reader(batch)
 
 
-Selection_loader = partial(DataLoader, collate_fn=collate_fn, pin_memory=True)
+Selection_loader = partial(DataLoader, collate_fn=collate_fn, pin_memory=True) # Dataset is the positional argument passes from the place it is called

@@ -61,6 +61,7 @@ class Runner(object):
         print("=" * 50)
         print("GPU Index:", self.gpu)
         print("=" * 50)
+        # Creating model object which inturn should call forward method
         self.model = MultiHeadSelection(self.hyper).cuda(self.gpu)
 
     def preprocessing(self):
@@ -128,25 +129,27 @@ class Runner(object):
             ]))
 
     def train(self):
-        train_set = Selection_Dataset(self.hyper, self.hyper.train)
-        loader = Selection_loader(train_set, batch_size=self.hyper.train_batch, pin_memory=True)
-
+        print("=" * 25, "Train Function", "=" * 25)
+        train_set = Selection_Dataset(self.hyper, self.hyper.train) # Population selection, text, bio and spo list from pre-processing
+        print("Num Samples in Train Set:", len(train_set))
+        loader = Selection_loader(train_set, batch_size=self.hyper.train_batch, pin_memory=True) # Selection Loader is a callable partial function
+        self.model.print_forward_once = True
         for epoch in range(self.hyper.epoch_num):
-            self.model.train()
+            self.model.train() # specifies the model that you are going to train it. Dropout and BatchNorm layers behave differently in train mode
             pbar = tqdm(enumerate(BackgroundGenerator(loader)),
-                        total=len(loader))
+                    total=len(loader))
 
             for batch_idx, sample in pbar:
 
                 self.optimizer.zero_grad()
-                output = self.model(sample, is_train=True)
+                output = self.model(sample, is_train=True) # forward method is called
+                self.model.print_forward_once = False
                 loss = output['loss']
                 loss.backward()
                 self.optimizer.step()
 
                 pbar.set_description(output['description'](
                     epoch, self.hyper.epoch_num))
-
             self.save_model(epoch)
 
             if epoch % self.hyper.print_epoch == 0 and epoch > 3:

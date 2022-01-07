@@ -6,7 +6,7 @@
     "train": "train.txt",
     "dev": "test.txt",
     "relation_vocab": "relation_vocab.json",
-    "print_epoch": 3,
+    "print_epoch": 1,
     "evaluation_epoch":132,
     "max_text_len": 250,
     "cell_name": "bert",
@@ -17,7 +17,7 @@
     "threshold": 0.5,
     "activation": "tanh",
     "optimizer": "adamw",
-    "epoch_num": 3,
+    "epoch_num": 1,
     "train_batch": 16,
     "eval_batch": 16,
     "gpu":0
