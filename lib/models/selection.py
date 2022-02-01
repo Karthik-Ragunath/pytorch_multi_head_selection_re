@@ -174,11 +174,17 @@ class MultiHeadSelection(nn.Module):
             with open('forward_info.txt', 'w') as fp:
                 #with redirect_stdout(fp):
                 print("Tokens:", tokens, file=fp)
+                print("Tokens Shape:", np.shape(tokens), file=fp)
                 print("Selection Gold:", selection_gold, file=fp)
+                print("Selection Gold Shape:", np.shape(selection_gold), file=fp)
                 print("bio_gold:", bio_gold, file=fp)
+                print("BIO Gold Shape:", np.shape(bio_gold), file=fp)
                 print("text_list:", text_list, file=fp)
+                print("Text List Shape:", np.shape(text_list), file=fp)
                 print("spo_gold:", spo_gold, file=fp)
+                print("SPO Gold Shape:", np.shape(spo_gold), file=fp)
                 print("bio_text:", bio_text, file=fp)
+                print("BIO Text Shape:", np.shape(bio_text), file=fp)
 
         if self.hyper.cell_name in ('gru', 'lstm'):
             mask = tokens != self.word_vocab['<pad>']  # batch x seq
@@ -196,10 +202,15 @@ class MultiHeadSelection(nn.Module):
             with open('forward_info.txt', 'a') as fp:
                 #with redirect_stdout(fp):
                 print("Mask:", mask, file=fp)
+                print("Mask Shape:", np.shape(mask), file=fp)
                 print("Notpad:", notpad, file=fp)
+                print("Notpad Shape:", np.shape(notpad), file=fp)
                 print("Notcls:", notcls, file=fp)
+                print("Notcls Shape:", np.shape(notcls), file=fp)
                 print("Notsep:", notsep, file=fp)
+                print("Notsep Shape:", np.shape(notsep), file=fp)
                 print("BioMask:", bio_mask, file=fp)
+                print("BioMask Shape:", np.shape(bio_mask), file=fp)
 
         if self.hyper.cell_name in ('lstm', 'gru'):
             embedded = self.word_embeddings(tokens)
