@@ -99,15 +99,15 @@ class MultiHeadSelection(nn.Module):
             else:
                 raise ValueError('unexpected activation!')
 
-            self.tagger = CRF(len(self.bio_vocab) - 1, batch_first=True)
+            self.tagger = CRF(len(self.bio_vocab) - 1, batch_first=True) # CRF(3, batchFirst=True)
 
             self.selection_u = nn.Linear(hyper.hidden_size + hyper.bio_emb_size,
-                                         hyper.rel_emb_size)
+                                         hyper.rel_emb_size) # (300 + 50), 100
             self.selection_v = nn.Linear(hyper.hidden_size + hyper.bio_emb_size,
                                          hyper.rel_emb_size)
             self.selection_uv = nn.Linear(2 * hyper.rel_emb_size,
                                           hyper.rel_emb_size)
-            self.emission = nn.Linear(hyper.hidden_size, len(self.bio_vocab) - 1)
+            self.emission = nn.Linear(hyper.hidden_size, len(self.bio_vocab) - 1) # nn.linear(300, 3)
 
             self.bert2hidden = nn.Linear(768, hyper.hidden_size)
             # for bert_lstm
@@ -137,6 +137,12 @@ class MultiHeadSelection(nn.Module):
 
         selection_triplets = self.selection_decode(text_list, decoded_tag,
                                                    selection_tags)
+
+        if self.print_once_forward:
+            with open('forward_info.txt', 'a') as fp:
+                print("Selection Mask:", np.shape(selection_mask), file=fp)
+                print("Selection Tags:", np.shape(selection_tags), file=fp)
+                print("Selection Triplets:", np.shape(selection_triplets), file=fp)
         return selection_triplets
 
     def masked_BCEloss(self, mask, selection_logits, selection_gold):
@@ -146,7 +152,12 @@ class MultiHeadSelection(nn.Module):
                               -1)  # batch x seq x rel x seq
         selection_loss = F.binary_cross_entropy_with_logits(selection_logits,
                                                             selection_gold,
-                                                            reduction='none')
+                                                            reduction='none') 
+        if self.print_once_forward:
+            with open('forward_info.txt', 'a') as fp:
+                print("Selection Mask:", np.shape(selection_mask), file=fp)
+                print("Selection Gold:", np.shape(selection_gold), file=fp)
+                print("Selection Loss Pre Sum:", np.shape(selection_loss), file=fp)
         selection_loss = selection_loss.masked_select(selection_mask).sum()
         selection_loss /= mask.sum()
         return selection_loss
@@ -159,12 +170,12 @@ class MultiHeadSelection(nn.Module):
 
     def forward(self, sample, is_train: bool) -> Dict[str, torch.Tensor]:
         # Forward method called
-        tokens = sample.tokens_id.cuda(self.gpu)
-        selection_gold = sample.selection_id.cuda(self.gpu)
-        bio_gold = sample.bio_id.cuda(self.gpu)
+        tokens = sample.tokens_id.cuda(self.gpu) # text tokens
+        selection_gold = sample.selection_id.cuda(self.gpu) # relation - N * seq_len * rel_size * seq_len
+        bio_gold = sample.bio_id.cuda(self.gpu) # N * seq_len
 
-        text_list = sample.text
-        spo_gold = sample.spo_gold
+        text_list = sample.text # N * seq_len
+        spo_gold = sample.spo_gold # N 
 
         bio_text = sample.bio
         if self.print_once_forward:
@@ -255,6 +266,7 @@ class MultiHeadSelection(nn.Module):
         if is_train:
             crf_loss = -self.tagger(emi, bio_gold,
                                     mask=bio_mask, reduction='mean')
+            # (14, 250, 3), (14, 250)
         else:
             decoded_tag = self.tagger.decode(emissions=emi, mask=bio_mask)
 
@@ -289,6 +301,8 @@ class MultiHeadSelection(nn.Module):
         selection_logits = torch.einsum('bijh,rh->birj', uv,
                                         self.relation_emb.weight)
 
+        # Pass it to Neural Network
+
         if self.print_once_forward:
             with open('forward_info.txt', 'a') as fp:
                 #with redirect_stdout(fp):
@@ -296,7 +310,7 @@ class MultiHeadSelection(nn.Module):
                 print("U Shape:", np.shape(u), file=fp)
                 print("V Shape:", np.shape(v), file=fp)
                 print("UV Shape:", np.shape(uv), file=fp)
-                print("Selection Logits:", selection_logits, file=fp)
+                print("Selection Logits:", np.shape(selection_logits), file=fp)
 
         # use loop instead of matrix
         # selection_logits_list = []
