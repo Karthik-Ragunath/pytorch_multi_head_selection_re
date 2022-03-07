@@ -1,4 +1,4 @@
-# "Joint entity recognition and relation extraction as a multi-head selection problem" (Expert Syst. Appl, 2018)
+# Cross Lingual Summarization - Encoder Architecture
 
 This repository is forked from [link](https://github.com/WindChimeRan/pytorch_multi_head_selection_re) and have been making significant modifications in this repository for improving the SOTA performance of Summarization models by introducing a `new idea` of incorporating learnings from Dependency Parser Networks along with word-level and NER embeddings using multiple Graphical Convolutional Neural Network (GCNConv) variants and use this as the encoder features which are to be fed to decoder network for performing Summarization.
 The experiments are still a {{WORK-IN-PROGRESS}} and hopefully would be completed soon. 
