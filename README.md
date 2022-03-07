@@ -2,7 +2,7 @@
 
 This repository is forked from https://github.com/WindChimeRan/pytorch_multi_head_selection_re and I have been modifying this repository for improving the SOTA performance of Summarization models by introducing a new idea of incorporating learnings from Dependency Parser Networks using multiple Graphical Convolutional Neural Network (GCNConv) variants and improve the encoder embeddings which are to be fed to decoder network for performing Summarization.
 The experiments are still a WORK-IN-PROGRESS and hopefully would be completed soon. 
-I am currently pushing my changes to feature/experiments branch {{Please track this branch for latest commits}}.
+I am currently pushing my changes to `feature/experiments` branch {{Please track this branch for latest commits}}. (Performed a master-merge recently).
 
 This model will be extreamly useful for real-world usage.
 
