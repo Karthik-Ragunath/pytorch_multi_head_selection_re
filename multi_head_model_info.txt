@@ -1,0 +1,12 @@
+Word Embedding: num_embeddings = 2500 embedding_dim = 300
+Relation Embedding: num_embeddings = 6 embedding_dim = 100
+Bio Embedding: num_embedding = 4 embedding_dim = 50
+LSTM or GRU: input_size = 300 hidden_size = 300
+---------Batch First is enabled----------
+Input Size: (Batch_Size, Sequence_Length, Input_Size)
+Output Dimension: (Batch_Size, Sequence_Length, Num_Dimensions * Output_Size)
+Selection U Linear: 350 100
+Selection V Linear: 350 100
+Selection UV Linear: 200 100
+Emission: 300 3
+Bert2Hidden: 768 300

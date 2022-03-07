@@ -4,7 +4,8 @@ from collections import Counter
 from typing import Dict, List, Tuple, Set, Optional
 
 from pytorch_transformers import *
-
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), "conll_bert_selection"))
 
 class Conll_bert_preprocessing(object):
     def __init__(self, hyper):
@@ -12,12 +13,17 @@ class Conll_bert_preprocessing(object):
         self.raw_data_root = hyper.raw_data_root
         self.data_root = hyper.data_root
 
+        print('*' * 50)
+        print('Data Root:', self.data_root)
+        print('*' * 50)
         if not os.path.exists(self.data_root):
             os.makedirs(self.data_root)
 
         self.relation_vocab_path = os.path.join(self.data_root,
                                                 hyper.relation_vocab)
-
+        print('=' * 50)
+        print("Relation Vocab Path:", self.relation_vocab_path)
+        print('=' * 50)
         self.bio_vocab = {}
         self.word_vocab = Counter()
         self.relation_vocab_set = set()
@@ -31,6 +37,9 @@ class Conll_bert_preprocessing(object):
     def _one_pass_train(self):
         # prepare for word_vocab, relation_vocab
         train_path = os.path.join(self.raw_data_root, self.hyper.train)
+        print("-" * 50)
+        print("Train Path:", train_path)
+        print("-" * 50)
         self.relation_vocab_set = set()
         sent = []
         dic = {}
@@ -38,6 +47,11 @@ class Conll_bert_preprocessing(object):
         with open(train_path, 'r') as f:
             for line in f:
                 if line.startswith('#'):
+                    '''
+                    print('*' * 25, "Train Data Parsing", '*'*25)
+                    print(sent)
+                    print('*' * 50)
+                    '''
                     if sent != []:
                         self.word_vocab.update(sent)
                     sent = []
@@ -53,9 +67,15 @@ class Conll_bert_preprocessing(object):
                     relation = eval(relation)
                     sent.append(word)
                     if relation != ['N']:
+                        # Sets are basically used to ensure no duplicate relation types for each token
                         self.relation_vocab_set.update(relation)
                         for r, h in zip(relation, head_list):
                             dic[word+'~'+r] = h
+            '''
+            print('*' * 25, "Train Data Parsing", '*'*25)
+            print(sent)
+            print('*' * 25, "Train Data parsing", '*'*25)
+            '''
             self.word_vocab.update(sent)
 
     def prepare_bert(self, result):
@@ -139,6 +159,91 @@ class Conll_bert_preprocessing(object):
                   
         return result
 
+
+    def prepare_bert_alternate(self, result):
+        def align_pos(text, bert_tokens):
+            i = 0
+            align_list = []
+            cur_text_tok = text[i].lower()
+            for tok in bert_tokens:
+                if tok.startswith('##'):
+                    tok = tok[2:]
+                # cur_text_tok is the full token
+                # tok is just piece
+                align_list.append(i) 
+                if cur_text_tok == tok and i < len(text) - 1:
+                    i += 1
+                    cur_text_tok = text[i].lower()
+                else:
+                    cur_text_tok = cur_text_tok[len(tok):]
+            assert len(text) - 1 == max(align_list)
+            return align_list
+
+        def align_bio(pos, bio):
+            result = []
+            for i, p in enumerate(pos):
+                if 1 != 0 and p == pos[i-1]:
+                    if bio[pos[i-1]] == 'B':
+                        result.append('I')
+                    else:
+                        result.append(bio[p])  # add 'I' or 'O'
+                else:
+                    result.append(bio[p])
+            return result
+
+        def head2new(idx, aligned_tokens_pos):
+            rev = list(reversed(aligned_tokens_pos))
+            length = len(aligned_tokens_pos)
+            new_idx = rev.index(idx)
+            new_idx = length - new_idx - 1
+            return new_idx
+
+        def selection2new(selection, aligned_tokens_pos):
+            # WARNING! strong side effect
+            for triplet in selection:
+                triplet['subject'] = head2new(
+                    triplet['subject'], aligned_tokens_pos)
+                triplet['object'] = head2new(
+                    triplet['object'], aligned_tokens_pos)
+
+        def spolist2new(spo_list, aligned_tokens_pos):
+            # WARNING! strong side effect
+            for triplet in spo_list:
+                triplet['subject'] = self.bert_tokenizer.tokenize(' '.join(triplet['subject']))
+                triplet['object'] = self.bert_tokenizer.tokenize(' '.join(triplet['object']))
+
+        text = result['text']
+        spo_list = result['spo_list']
+        bio = result['bio']
+        selection = result['selection']
+        bert_tokens = self.bert_tokenizer.tokenize(' '.join(text))
+        print("=" * 50)
+        print("Bert Tokens:", bert_tokens)
+        print("=" * 50)
+        aligned_tokens_pos = align_pos(text, bert_tokens)
+        print("=" * 50)
+        print("Aligned Tokens POS:", aligned_tokens_pos)
+        print("=" * 50)
+        aligned_bio = align_bio(aligned_tokens_pos, bio)
+        print("=" * 50)
+        print("Aligned BIO:", aligned_bio)
+        print("=" * 50)
+        assert len(text) - 1 == max(aligned_tokens_pos)
+        assert len(aligned_tokens_pos) == len(bert_tokens)
+        assert len(aligned_bio) == len(bert_tokens)
+        spolist2new(spo_list, aligned_tokens_pos)
+        print("=" * 50)
+        print("SPO List:", spo_list)
+        print("=" * 50)
+        selection2new(selection, aligned_tokens_pos)
+        print("=" * 50)
+        print("Selection:", selection)
+        print("=" * 50)
+        result = {'text': bert_tokens, 'spo_list': spo_list,
+                  'bio': aligned_bio, 'selection': selection}
+        return result
+
+
     def _gen_one_data(self, dataset):
         sent = []
         bio = []
@@ -147,6 +252,10 @@ class Conll_bert_preprocessing(object):
         selection_dics = []  # temp
         source = os.path.join(self.raw_data_root, dataset)
         target = os.path.join(self.data_root, dataset)
+        print("^" * 25, "Paths", "^" * 25)
+        print("Source Path:", source)
+        print("Target Path:", target)
+        print("^" * 50)
         with open(source, 'r') as s, open(target, 'w') as t:
             for line in s:
                 if line.startswith('#'):
@@ -185,8 +294,55 @@ class Conll_bert_preprocessing(object):
                 triplets = self._process_sent(sent, selection_dics, bio)
                 result = {'text': sent, 'spo_list': triplets,
                           'bio': bio, 'selection': selection_dics}
+                print("^" * 25, "Data Preprocessing: _gen_one_data", "^" * 25)
+                print("Triplets:", triplets)
+                print("Result:", result)
                 result = self.prepare_bert(result)
+                print("Result Bert Prepared:", result)
+                print("^" * 50)
                 t.write(json.dumps(result))
+
+
+    def _gen_one_data_alternate(self, dataset):
+        sent = []
+        bio = []
+        dic = {}
+        selection = []
+        selection_dics = []  # temp
+        source = os.path.join(self.raw_data_root, dataset)
+        target = os.path.join(self.data_root, dataset)
+        print("^" * 25, "Paths", "^" * 25)
+        print("Source Path:", source)
+        print("Target Path:", target)
+        print("^" * 50)
+        with open(source, 'r') as s, open(target, 'w') as t:
+            for line in s:
+                assert len(self._parse_line(line)) == 5
+
+                num, word, etype, relation, head_list = self._parse_line(
+                    line)
+
+                head_list = eval(head_list)
+                relation = eval(relation)
+                sent.append(word)
+                bio.append(etype[0])  # only BIO
+                print("word:", word, "bio:", bio)
+                if relation != ['N']:
+                    self.relation_vocab_set.update(relation)
+                    for r, h in zip(relation, head_list):
+                        dic[word+'~'+r] = h
+                        selection_dics.append(
+                            {'subject': int(num), 'predicate': self.relation_vocab_dict[r], 'object': h})
+            triplets = self._process_sent(sent, selection_dics, bio)
+            result = {'text': sent, 'spo_list': triplets,
+                      'bio': bio, 'selection': selection_dics}
+            print("^" * 25, "Data Preprocessing: _gen_one_data", "^" * 25)
+            print("Triplets:", triplets)
+            print("Result:", result)
+            result = self.prepare_bert(result)
+            print("Result Bert Prepared:", result)
+            print("^" * 50)
+            t.write(json.dumps(result))
 
     def gen_all_data(self):
         self._gen_one_data(self.hyper.train)
@@ -194,21 +350,30 @@ class Conll_bert_preprocessing(object):
 
     def gen_bio_vocab(self):
         result = {'<pad>': 3, 'B': 0, 'I': 1, 'O': 2}
+        # writing result dict to bio_vocab.json
         json.dump(result,
                   open(os.path.join(self.data_root, 'bio_vocab.json'), 'w'))
 
     def gen_relation_vocab(self):
         relation_vocab = {}
         i = 0
+        print("=" * 25, "Possible Relations:", "=" * 25)
+        print(self.relation_vocab_set)
+        print("=" * 50)
         for r in self.relation_vocab_set:
             relation_vocab[r] = i
             i += 1
         relation_vocab['N'] = i
+        print("+" * 25, "Relation Index Dict:", "+" * 25)
+        print(relation_vocab)
+        print('-' * 20, "Relationship Vocab Path:", self.relation_vocab_path, '-' * 20)
+        print("+" * 50)
         self.relation_vocab_dict = relation_vocab
         json.dump(relation_vocab,
                   open(self.relation_vocab_path, 'w'),
                   ensure_ascii=True)
 
+    # min frequency specified is 1
     def gen_vocab(self, min_freq: int):
         target = os.path.join(self.data_root, 'word_vocab.json')
         result = {'<pad>': 0}
@@ -262,8 +427,10 @@ class Conll_bert_preprocessing(object):
             de = result[3:]
             d, e = [], []
             cur = d
+            # Now cur points to same object as d
             for t in de:
                 cur.append(t)
                 if t.endswith(']'):
                     cur = e
+                    # Now cur points to same object as e
             return a, b, c, ''.join(d), ''.join(e)

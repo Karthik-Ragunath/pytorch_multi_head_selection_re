@@ -1,0 +1,34 @@
+**************************************************
+Data Root: data/conll_bert/multi_head_selection
+**************************************************
+==================================================
+Relation Vocab Path: data/conll_bert/multi_head_selection/relation_vocab.json
+==================================================
+--------------------------------------------------
+Train Path: raw_data/CoNLL04/train.txt
+--------------------------------------------------
+========================= Possible Relations: =========================
+{'Located_In', 'Live_In', 'Work_For', 'OrgBased_In', 'Kill'}
+==================================================
++++++++++++++++++++++++++ Relation Index Dict: +++++++++++++++++++++++++
+{'Located_In': 0, 'Live_In': 1, 'Work_For': 2, 'OrgBased_In': 3, 'Kill': 4, 'N': 5}
+-------------------- Relationship Vocab Path: data/conll_bert/multi_head_selection/relation_vocab.json --------------------
+++++++++++++++++++++++++++++++++++++++++++++++++++
+^^^^^^^^^^^^^^^^^^^^^^^^^ Paths ^^^^^^^^^^^^^^^^^^^^^^^^^
+Source Path: raw_data/CoNLL04/train.txt
+Target Path: data/conll_bert/multi_head_selection/train.txt
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^ Data Preprocessing: _gen_one_data ^^^^^^^^^^^^^^^^^^^^^^^^^
+Triplets: [{'subject': ['Congress'], 'predicate': 'OrgBased_In', 'object': ['U.S.']}, {'subject': ['Congress'], 'predicate': 'OrgBased_In', 'object': ['U.S.']}]
+Result: {'text': ['With', 'considerable', 'rough', 'sailing', 'and', 'difficulty', 'anticipated', 'in', 'the', 'process', 'of', 'ratification', 'by', 'the', 'U.S.', 'Congress', ',', 'the', 'Congress', 'is', 'hardly', 'expected', 'to', 'complete', 'the', 'ratification', 'process', 'within', 'the', 'time', 'limit', 'set', 'by', 'the', 'UR', 'agreement', '.'], 'spo_list': [{'subject': ['Congress'], 'predicate': 'OrgBased_In', 'object': ['U.S.']}, {'subject': ['Congress'], 'predicate': 'OrgBased_In', 'object': ['U.S.']}], 'bio': ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B', 'B', 'O', 'O', 'B', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'], 'selection': [{'subject': 15, 'predicate': 3, 'object': 14}, {'subject': 18, 'predicate': 3, 'object': 14}]}
+Result Bert Prepared: {'text': ['with', 'considerable', 'rough', 'sailing', 'and', 'difficulty', 'anticipated', 'in', 'the', 'process', 'of', 'ratification', 'by', 'the', 'u', '.', 's', '.', 'congress', ',', 'the', 'congress', 'is', 'hardly', 'expected', 'to', 'complete', 'the', 'ratification', 'process', 'within', 'the', 'time', 'limit', 'set', 'by', 'the', 'ur', 'agreement', '.'], 'spo_list': [{'subject': ['congress'], 'predicate': 'OrgBased_In', 'object': ['u', '.', 's', '.']}, {'subject': ['congress'], 'predicate': 'OrgBased_In', 'object': ['u', '.', 's', '.']}], 'bio': ['O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B', 'I', 'I', 'I', 'B', 'O', 'O', 'B', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O'], 'selection': [{'subject': 18, 'predicate': 3, 'object': 17}, {'subject': 21, 'predicate': 3, 'object': 17}]}
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^ Paths ^^^^^^^^^^^^^^^^^^^^^^^^^
+Source Path: raw_data/CoNLL04/test.txt
+Target Path: data/conll_bert/multi_head_selection/test.txt
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^ Data Preprocessing: _gen_one_data ^^^^^^^^^^^^^^^^^^^^^^^^^
+Triplets: [{'subject': ['Cascade'], 'predicate': 'Located_In', 'object': ['Washington']}, {'subject': ['Greg', 'Thayer'], 'predicate': 'Work_For', 'object': ['U.S.', 'Forest', 'Service']}]
+Result: {'text': ['In', 'Washington', 'state', ',', 'an', '850-acre', 'fire', 'burning', 'in', 'the', 'Cascade', 'range', 'near', 'the', 'Canadian', 'border', 'was', '84', 'percent', 'contained', 'Tuesday', ',', 'said', 'Greg', 'Thayer', 'of', 'the', 'U.S.', 'Forest', 'Service', '.'], 'spo_list': [{'subject': ['Cascade'], 'predicate': 'Located_In', 'object': ['Washington']}, {'subject': ['Greg', 'Thayer'], 'predicate': 'Work_For', 'object': ['U.S.', 'Forest', 'Service']}], 'bio': ['O', 'B', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B', 'O', 'O', 'O', 'O', 'O', 'O', 'B', 'I', 'O', 'O', 'O', 'O', 'B', 'I', 'O', 'O', 'B', 'I', 'I', 'O'], 'selection': [{'subject': 10, 'predicate': 0, 'object': 1}, {'subject': 24, 'predicate': 2, 'object': 29}]}
+Result Bert Prepared: {'text': ['in', 'washington', 'state', ',', 'an', '850', '-', 'acre', 'fire', 'burning', 'in', 'the', 'cascade', 'range', 'near', 'the', 'canadian', 'border', 'was', '84', 'percent', 'contained', 'tuesday', ',', 'said', 'greg', 'thayer', 'of', 'the', 'u', '.', 's', '.', 'forest', 'service', '.'], 'spo_list': [{'subject': ['cascade'], 'predicate': 'Located_In', 'object': ['washington']}, {'subject': ['greg', 'thayer'], 'predicate': 'Work_For', 'object': ['u', '.', 's', '.', 'forest', 'service']}], 'bio': ['O', 'B', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'O', 'B', 'O', 'O', 'O', 'O', 'O', 'O', 'B', 'I', 'O', 'O', 'O', 'O', 'B', 'I', 'O', 'O', 'B', 'I', 'I', 'I', 'I', 'I', 'O'], 'selection': [{'subject': 12, 'predicate': 0, 'object': 1}, {'subject': 26, 'predicate': 2, 'object': 34}]}
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
