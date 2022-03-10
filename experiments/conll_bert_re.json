@@ -18,7 +18,7 @@
     "activation": "tanh",
     "optimizer": "adamw",
     "epoch_num": 1,
-    "train_batch": 16,
-    "eval_batch": 16,
+    "train_batch": 2,
+    "eval_batch": 2,
     "gpu":0
 }
