@@ -179,6 +179,7 @@ class MultiHeadSelection(nn.Module):
         edge_matrix_axis_swapped = torch.swapaxes(edge_matrix, -1, -2).cuda(self.gpu) 
         stacked_source_dest_tensors = torch.tensor([[], []]).cuda(self.gpu) 
         stacked_weight_tensors = torch.tensor([[]]).cuda(self.gpu)
+        # Have to find a way to parallelize this
         for r_m in range(len(edge_matrix_axis_swapped)):
             source_dest_tensors = torch.tensor([[],[]]).cuda(self.gpu)
             weight_tensors = torch.tensor([]).cuda(self.gpu)
