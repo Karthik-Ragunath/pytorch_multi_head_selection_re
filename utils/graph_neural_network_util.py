@@ -6,19 +6,20 @@ from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 import numpy as np
 
-
-def create_graph_data(node_embeddings=None, edge_matrix=None, batch_size=1):
-    edge_matrix_axis_swapped = torch.swapaxes(edge_matrix, -1, -2)
-    stacked_source_dest_tensors = torch.tensor([[], []])
-    stacked_weight_tensors = torch.tensor([[]])
+gpu = "0"
+ddef create_graph_data(node_embeddings=None, edge_matrix=None, batch_size=1):
+    ### Have to parallelize this block.
+    edge_matrix_axis_swapped = torch.swapaxes(edge_matrix, -1, -2).cuda(gpu) 
+    stacked_source_dest_tensors = torch.tensor([[], []]).cuda(gpu) 
+    stacked_weight_tensors = torch.tensor([[]]).cuda(gpu)
     for r_m in range(len(edge_matrix_axis_swapped)):
-        source_dest_tensors = torch.tensor([[],[]])
-        weight_tensors = torch.tensor([])
+        source_dest_tensors = torch.tensor([[],[]]).cuda(gpu)
+        weight_tensors = torch.tensor([]).cuda(gpu)
         for source in range(len(edge_matrix_axis_swapped[r_m])):
             for destination in range(len(edge_matrix_axis_swapped[r_m][source])):
                 for relation in range(len(edge_matrix_axis_swapped[r_m][source][destination])):
-                    source_dest_tensors = torch.cat((source_dest_tensors, torch.reshape(torch.tensor([source, destination]), (2, 1))), 1)
-                    weight_tensors = torch.cat((weight_tensors, torch.tensor([edge_matrix_axis_swapped[r_m][source][destination][relation]])), 0)
+                    source_dest_tensors = torch.cat((source_dest_tensors, torch.reshape(torch.tensor([source, destination]).cuda(gpu), (2, 1))), 1)
+                    weight_tensors = torch.cat((weight_tensors, torch.tensor([edge_matrix_axis_swapped[r_m][source][destination][relation]]).cuda(gpu)), 0)
         source_dest_tensors_unsqueezed = torch.unsqueeze(source_dest_tensors, dim=0)
         weight_tensors_unsqueezed = torch.unsqueeze(weight_tensors, dim=0)
         if not stacked_source_dest_tensors.numel():
@@ -40,11 +41,32 @@ def create_graph_data(node_embeddings=None, edge_matrix=None, batch_size=1):
     return batched_dataset
 
 
-def create_graph_encoding(node_embeddings=None, edge_matrix=None):
-    batched_dataset = create_graph_data(node_embeddings=node_embeddings, edge_matrix=edge_matrix)
-    graph_encodings = []
+def create_graph_encoding(node_embeddings=None, edge_matrix=None, out_channel_size=300, batch_size=1):
+    batched_dataset = create_graph_data(node_embeddings=node_embeddings, edge_matrix=edge_matrix, batch_size=batch_size)
+    gcn_conv = torch_geometric.nn.GCNConv(in_channels=len(node_embeddings[0][0]), out_channels=out_channel_size, add_self_loops=False).cuda(gpu)
+    graph_encodings = torch.tensor([]).cuda(gpu)
     for dataset in batched_dataset:
-        gcn_conv = nn.GCNConv(in_channels=dataset.num_features, out_channels=300, add_self_loops=False)
         x = gcn_conv(x = dataset.x, edge_index=dataset.edge_index, edge_weight=dataset.edge_weights)
-        graph_encodings.append(x)
+        graph_encoding_reshaped = torch.reshape(x, (-1, len(node_embeddings[0]), out_channel_size))
+        if not graph_encodings.numel():
+            graph_encodings = graph_encoding_reshaped
+        else:
+            graph_encodings = torch.cat((graph_encodings, graph_encoding_reshaped), dim=0)
     return graph_encodings
+
+
+def encode_graph_encodings(graph_encodings=None):
+    batch_size = graph_encodings.shape[0]
+    seq_len = graph_encodings.shape[1]
+    features_dim = graph_encodings.shape[2]
+
+    num_layers = 1
+    num_directions = 2
+    output_size = graph_encodings.shape[2]
+
+    hidden = torch.randn(num_layers * num_directions, batch_size, output_size).cuda(gpu)
+    cell_state = torch.randn(num_layers * num_directions, batch_size, output_size).cuda(gpu)
+    cell = torch.nn.LSTM(input_size = features_dim, hidden_size = output_size, batch_first = True, num_layers = 1, bidirectional = True).cuda(gpu)
+
+    out, hidden = cell(graph_encodings, (hidden, cell_state))
+    return out[:, -1, :]
