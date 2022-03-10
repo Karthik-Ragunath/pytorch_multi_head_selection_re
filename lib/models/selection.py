@@ -206,14 +206,35 @@ class MultiHeadSelection(nn.Module):
         return batched_dataset
 
 
-    def create_graph_encoding(node_embeddings=None, edge_matrix=None):
+    def create_graph_encoding(node_embeddings=None, edge_matrix=None, out_channel_size=300, batch_size=1):
         batched_dataset = create_graph_data(node_embeddings=node_embeddings, edge_matrix=edge_matrix)
-        graph_encodings = []
+        gcn_conv = nn.GCNConv(in_channels=len(node_embeddings[0][0]), out_channels=out_channel_size, add_self_loops=False)
+        graph_encodings = torch.tesnor([])
         for dataset in batched_dataset:
-            gcn_conv = nn.GCNConv(in_channels=dataset.num_features, out_channels=300, add_self_loops=False)
             x = gcn_conv(x = dataset.x, edge_index=dataset.edge_index, edge_weight=dataset.edge_weights)
-            graph_encodings.append(x)
+            graph_encoding_reshaped = torch.reshape(x, (-1, len(node_embeddings[0]), out_channel_size))
+            if not graph_encodings.numel():
+                graph_encodings = graph_encoding_reshaped
+            else:
+                graph_encodings = torch.cat((graph_encodings, graph_encoding_reshaped), dim=0)
         return graph_encodings
+
+
+    def encode_graph_encodings(graph_encodings=None):
+        batch_size = graph_encodings.shape[0]
+        seq_len = graph_encodings.shape[1]
+        features_dim = graph_encodings.shape[2]
+
+        num_layers = 1
+        num_directions = 2
+        output_size = graph_encodings.shape[2]
+
+        hidden = torch.randn(num_layers * num_directions, batch_size, output_size)
+        cell_state = torch.randn(num_layers * num_directions, batch_size, output_size)
+        cell = torch.nn.LSTM(input_size = features_dim, hidden_size = output_size, batch_first = True, num_layers = 1, bidirectional = True)
+
+        out, hidden = cell(graph_encodings, (hidden, cell_state))
+        return out[:, -1, :]
 
 
     def forward(self, sample, is_train: bool) -> Dict[str, torch.Tensor]:
@@ -361,6 +382,8 @@ class MultiHeadSelection(nn.Module):
                 print("Selection Logits:", np.shape(selection_logits), file=fp)
 
         graph_encodings = create_graph_encoding(node_embeddings=o, edge_matrix=selection_logits)
+        lstm_output = encode_graph_encodings(graph_encodings=graph_encodings)
+        print("LSTM Output Shape:", lstm_output.shape, file=fp)
         # must use this graph_encoding as lstm input or perform one more level of graph convolutions
         # and pass their outputs as inputs to decoder described in "Get To The Point Summarizer" 
 
