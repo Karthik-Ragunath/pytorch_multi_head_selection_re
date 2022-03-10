@@ -8,6 +8,7 @@ import numpy as np
 
 
 ddef create_graph_data(self, node_embeddings=None, edge_matrix=None, batch_size=1):
+    ### Have to parallelize this block.
     edge_matrix_axis_swapped = torch.swapaxes(edge_matrix, -1, -2).cuda(self.gpu) 
     stacked_source_dest_tensors = torch.tensor([[], []]).cuda(self.gpu) 
     stacked_weight_tensors = torch.tensor([[]]).cuda(self.gpu)
